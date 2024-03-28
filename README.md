@@ -1,2 +1,0 @@
-# RTA
-registro tumori animali
