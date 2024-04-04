@@ -214,21 +214,29 @@ server <- function(input, output, session) {
   
   # p2----
   output$p2 <- renderPlotly({
-    dtBO %>% 
+    dt <- dtBO %>% 
       group_by(vet_icd_o_1_code) %>% 
       summarise(casi = n(), .groups = "drop") %>% 
-      arrange(desc(casi)) %>% 
-      head(5) %>% 
-      plot_ly(x = ~casi, y = ~vet_icd_o_1_code, type = "bar", #color = ~vet_icd_o_1_code,
+      mutate(perc = casi/(sum(casi))) %>% 
+      arrange(desc(perc)) %>% 
+      head(5)
+    
+    max_range <- max(dt$perc)+0.05-max(dt$perc)%%0.05
+    
+    dt %>% 
+      plot_ly(x = ~perc, y = ~vet_icd_o_1_code, type = "bar", #color = ~vet_icd_o_1_code,
               source = "p2",
               marker = list(color = "#ABBDD7",
                             line = list(color = 'rgb(8,48,107)', width = 1)),
-              text = ~casi, textfont = list(color = '#000'),
+              text = ~perc,
+              texttemplate = '%{x:.0%}',
+              textfont = list(color = '#000'),
               textposition = 'outside') %>% 
       layout(
         margin = list(b = 50, t = 50),
         title = list(text = 'Top 5 tipi di tumore canino', x = 0.05),
-        xaxis = list(title = "numero di casi"),
+        xaxis = list(title = "% di casi", tickformat = ".0%",
+                     range = list(0, max_range)),
         yaxis = list(title = "", categoryorder = "total ascending"),
         showlegend = F) %>%
       config(displayModeBar = FALSE) %>% 
@@ -259,9 +267,11 @@ server <- function(input, output, session) {
           footer = NULL, #modalButton("Chiudi"),
           # title = paste0("Vet-ICD-O: ", plotly_barclick$y),
           title = div(style = "font-size: 18px;",
-                      HTML(paste0("Vet-ICD-O: ", plotly_barclick$y,
-                                  "<br>",
-                                  "ICD-O: ", unique(gt_diagnosi$icd_o_code[gt_diagnosi$vet_icd_o == plotly_barclick$y])))),
+                      HTML(paste0("Vet-ICD-O: ", plotly_barclick$y
+                                  # "<br>",
+                                  # "ICD-O: ", unique(gt_diagnosi$icd_o_code[gt_diagnosi$vet_icd_o == plotly_barclick$y])
+                                  )
+                           )),
           uiOutput('modalDT')
           
         ))
@@ -291,7 +301,7 @@ server <- function(input, output, session) {
   
   # p3----
   output$p3 <- renderPlotly({
-    dtBO %>%
+    dt <- dtBO %>%
       mutate(
         eta_anno = as.integer(str_extract(eta, "\\d+(?=a)")),
         eta_mese = as.integer(str_extract(eta, "\\d+(?=m)")),
@@ -309,7 +319,11 @@ server <- function(input, output, session) {
       group_by(specie, eta_classe) %>% 
       summarise(n = n(), .groups = "drop") %>%
       filter(specie == "Cane") %>% 
-      mutate(perc = n/sum(n)) %>% 
+      mutate(perc = n/sum(n))
+    
+    max_range <- max(dt$perc)+0.05-max(dt$perc)%%0.05
+    
+    dt %>% 
       plot_ly(x = ~eta_classe, y = ~perc, type = "bar", #color = ~eta_classe,
               marker = list(color = "#ABBDD7",
                             line = list(color = 'rgb(8,48,107)', width = 1)),
@@ -321,7 +335,7 @@ server <- function(input, output, session) {
         title = list(text = 'Età media alla diagnosi', x = 0.05),
         xaxis = list(title = "", tickangle= -45),
         yaxis = list(title = "% di casi", tickformat = ".0%",
-                     range = list(0, 0.54),
+                     range = list(0, max_range),
                      tick0 = 0,
                      dtick = 0.05),
         showlegend = F) %>%
