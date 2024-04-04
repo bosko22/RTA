@@ -1,6 +1,6 @@
 server <- function(input, output, session) {
   
-  shinyjs::addClass(class = "nav-fill", selector = ".nav-pills") #nav-justified
+  shinyjs::addClass(class = "nav-justified", selector = ".nav-pills") #nav-fill
   
   # observe(session$setCurrentTheme(
   #   if (isTRUE(input$dark_mode)) dark else light
@@ -10,85 +10,85 @@ server <- function(input, output, session) {
     plot(cars)
   })
   
-  zoom <- reactive({
-    
-    if(is.null(input$map01_zoom)){
-      return(9)
-    }else{
-      return(input$map01_zoom)
-    }
-    
-  })
+  # zoom <- reactive({
+  #   if(is.null(input$map01_zoom)){
+  #     return(9)
+  #   }else{
+  #     return(input$map01_zoom)
+  #   }
+  # })
+  # 
+  # center <- reactive({
+  #   if(is.null(input$map01_center)){
+  #     return(c(11.31, 44.44))
+  #   }else{
+  #     return(input$map01_center)
+  #   }
+  # })
   
-  center <- reactive({
-    
-    if(is.null(input$map01_center)){
-      return(c(11.31, 44.44))
-    }else{
-      return(input$map01_center)
-    }
-    
-  })
   
-
+  
+  
   labels <- reactive({
-    paste("<strong>",
+    paste("<strong style='font-family:Montserrat;font-size:18px;text-transform:uppercase'>",
           comuni$COMUNE,
-          "</strong><br>",
-
-          "Casi riportati:",
-          comuni$casi_totali,
-          "<br>") %>%
+          "</strong><br>") %>%
       lapply(htmltools::HTML)
   })
   
+  # mymap----
   output$mymap <- renderLeaflet({
     
-    pal <- colorNumeric("Reds", domain=comuni$casi_totali)
+    pal <- colorNumeric("Reds", domain=comuni$casi_cane)
     
-    leaflet(comuni,
-      options = leafletOptions(
-        minZoom = 9,
-        maxZoom = 10,
-        zoomControl=FALSE,
-        attributionControl=FALSE)) %>%
-      addProviderTiles(providers$CartoDB.Positron) %>% 
+    comuni %>%
+      leaflet(
+        options = leafletOptions(
+          minZoom = 9,
+          maxZoom = 10,
+          zoomControl=FALSE,
+          attributionControl=FALSE)) %>%
+      # addProviderTiles(providers$CartoDB.Positron) %>% 
       # addTiles() %>% 
-      setView(lng = center()[1],
-              lat = center()[2],
-              zoom = zoom()) %>% 
+      # setView(lng = center()[1],
+      #         lat = center()[2],
+      #         zoom = zoom()) %>% 
+      setView(lng = 11.31,
+              lat = 44.44,
+              zoom = 9) %>% 
       # addPolygons(data = regioneER, fill = FALSE, weight = 1, color = "black") %>% 
       # addPolygons(data = provinceER, fill = FALSE, weight = 1, color = "black") %>% 
+      
       addPolygons(layerId = ~COMUNE,
-                  color = "#444444", weight = 1, smoothFactor = 0.5,
-                  
+                  color = "#444444",
+                  weight = 1,
+                  smoothFactor = 0.5,
                   opacity = 0.7,
-                  
                   fillOpacity = 0.7,
-                  
-                  fillColor = ~pal(casi_totali),
-                  
-                  # fillColor = ~colorQuantile("YlOrRd", ALAND)(ALAND),
+                  fillColor = ~ ifelse(casi_cane == 0, "#fff", pal(casi_cane)),
                   label = ~labels(),
-                  
                   highlightOptions = highlightOptions(fillOpacity = 0.6,
                                                       # color = "red",
-                                                      weight = 2,
+                                                      # fillColor = "yellow",
+                                                      weight = 3,
                                                       bringToFront = TRUE)) %>%
+      
       addEasyButton(
         easyButton(
-        id = 'reset-btn',
-        icon = "fa-arrows-rotate", 
-        title = "Reset",
-        position = "bottomleft",
-        onClick = JS("function(btn, map){ map.setView([44.44, 11.31], 9); }"))) %>% 
+          id = 'reset_btn',
+          # icon = HTML("<div>
+          #             <i class='fas fa-arrows-rotate'></i>
+          #             <span style = 'font-size:18px;font-family:Montserrat;font-weight:bold;'> reset </span>
+          #             </div>"),
+          icon = HTML("<div>
+                    <span style = 'font-size:18px;font-family:Montserrat;font-weight:bold;'> PROVINCIA DI BOLOGNA </span>
+                    </div>"),
+          title = "reset map",
+          position = "bottomright",
+          onClick = JS("function(btn, map){ map.setView([44.44, 11.31], 9); }"))) %>% 
       # https://stackoverflow.com/questions/48450273/how-to-set-zoom-level-view-of-leaflet-map
-      # xmin: 10.8037 ymin: 44.06226 xmax: 11.84204 ymax: 44.80476
-       setMaxBounds(10.8037-1,44.06226,11.84204+1,44.80476)  %>%
-      addControl(title, position = "bottomright", className="map-title")
-    
-      # setMaxBounds(lng1 = 10, lat1 = 44, lng2 = 12, lat2 = 45)
-      # setMaxBounds(lng1 = 11.31, lat1 = 44.44, lng2 = 11.31, lat2 = 44.44)
+      setMaxBounds(10.8037-1,44.06226,11.84204+1,44.80476) 
+    # addControl(title, position = "bottomleft", className="map-title")
     
     
     # https://gis.stackexchange.com/questions/301839/how-to-create-independent-fixed-inset-maps-with-leaflet
@@ -103,9 +103,9 @@ server <- function(input, output, session) {
     # https://stackoverflow.com/questions/71013017/move-zoom-controls-in-leaflet-for-r-shiny
   })
   
-
   
-  # clicked <- reactiveVal()
+  
+  clicked_shape <- reactiveVal(NULL)
   
   
   observeEvent(input$mymap_shape_click, {
@@ -116,13 +116,54 @@ server <- function(input, output, session) {
       setView(lng = comuni$lon_centroid[comuni$COMUNE == click$id], lat = comuni$lat_centroid[comuni$COMUNE == click$id], zoom = 10)
     # setView(lng = click$lng, lat = click$lat, zoom = 10)
     
-    # clicked(input$mymap_shape_click)
+    clicked_shape(input$mymap_shape_click)
+    
+    updateSelectizeInput(session, "selcom", selected = character(0))
     
   })
+  
+  
+  sel_comune <- reactive({
+    comuni %>%
+      filter(COMUNE %in% input$selcom)
+  })
+  
+  # sel_comune <- reactiveVal(NULL)
+  
+  
+  observeEvent(input$selcom, {
+    
+    # sel_comune(input$selcom)
+    
+    leafletProxy("mymap") %>% 
+      clearPopups() %>% 
+      addPopups(
+        data = sel_comune(),
+        popup = ~COMUNE,
+        ~lon_centroid, 
+        ~lat_centroid) %>% 
+      setView(lng = sel_comune()$lon_centroid, lat = sel_comune()$lat_centroid, zoom = 10)
+    # clearMarkers() %>% 
+    # addMarkers(
+    #   # data = comuni[comuni$COMUNE == sel_comune(), ],
+    #   data = sel_comune(),
+    #           ~lon_centroid, 
+    #           ~lat_centroid)
+    
+  })
+  
+  # reset map----
+  onclick("reset_btn", {
+    clicked_shape(NULL);
+    updateSelectizeInput(session, "selcom", selected = character(0))
+  })
+  
   
   # https://stackoverflow.com/questions/73314170/distinguish-between-inputmap-click-and-inputmap-shape-click-in-leaflet-r-shiny
   # https://stackoverflow.com/questions/76465586/click-on-a-polygon-of-a-leaflet-map-and-subset-the-same-dataset-which-is-display
   
+  
+  # data----
   cases <- reactive({
     cases <- dtBO %>% 
       select(data, comune, codice_paziente, specie, razza, vet_icd_o_1_code) %>% 
@@ -131,7 +172,8 @@ server <- function(input, output, session) {
     
   })
   
-  output$tab_home <- DT::renderDataTable({
+  
+  output$tab_data <- DT::renderDataTable({
     DT::datatable(
       cases(),
       rownames = FALSE,
@@ -139,10 +181,12 @@ server <- function(input, output, session) {
       class = "cell-border stripe compact",
       options = list(
         scrollX = TRUE)
-      ) %>% 
+    ) %>% 
       formatDate(c("data"), 'toLocaleDateString')
     
   })
+  
+  
   
   # p1----
   output$p1 <- renderPlotly({
@@ -162,7 +206,7 @@ server <- function(input, output, session) {
         title = list(text = 'Top 5 razze di cane affette da tumore', x = 0.05),
         xaxis = list(title = "numero di casi"),
         yaxis = list(title = "", categoryorder = "total ascending"),
-             showlegend = F) %>%
+        showlegend = F) %>%
       config(displayModeBar = FALSE) %>% 
       style(hoverinfo = 'none')
     
@@ -176,6 +220,7 @@ server <- function(input, output, session) {
       arrange(desc(casi)) %>% 
       head(5) %>% 
       plot_ly(x = ~casi, y = ~vet_icd_o_1_code, type = "bar", #color = ~vet_icd_o_1_code,
+              source = "p2",
               marker = list(color = "#ABBDD7",
                             line = list(color = 'rgb(8,48,107)', width = 1)),
               text = ~casi, textfont = list(color = '#000'),
@@ -190,6 +235,59 @@ server <- function(input, output, session) {
       style(hoverinfo = 'none')
     
   })
+  
+  
+  # diagn <- reactive({
+  #   diagnosi %>% 
+  #     filter(vet_icd_o == event_data$y) %>% 
+  #     select(vet_icd_o, categoria, term)
+  # })
+  
+  # https://stackoverflow.com/questions/70265205/plotly-shiny-reactive-values-error-function-not-found
+  # plotly_click <- reactiveVal(NULL)
+  plotly_barclick <- reactiveValues(selections=NULL)
+  
+  observeEvent(
+    event_data("plotly_click", source = "p2", priority = "event"), {
+      
+      # plotly_click(event_data("plotly_click", source = "p2", priority = "event"))
+      plotly_barclick <- event_data("plotly_click", source = "p2", priority = "event")
+      
+      showModal(#tags$div(id="modal_plotly",
+        modalDialog(
+          easyClose = TRUE,
+          footer = NULL, #modalButton("Chiudi"),
+          # title = paste0("Vet-ICD-O: ", plotly_barclick$y),
+          title = div(style = "font-size: 18px;",
+                      HTML(paste0("Vet-ICD-O: ", plotly_barclick$y,
+                                  "<br>",
+                                  "ICD-O: ", unique(gt_diagnosi$icd_o_code[gt_diagnosi$vet_icd_o == plotly_barclick$y])))),
+          uiOutput('modalDT')
+          
+        ))
+      
+    })
+  
+  output$modalDT <- renderUI({
+    
+    plotly_barclick <- event_data("plotly_click", source = "p2", priority = "event")
+    
+    gt_diagnosi %>% 
+      filter(vet_icd_o %in% plotly_barclick$y) %>% 
+      select(classe, categoria, term, synonym, related) %>%
+      arrange(classe, categoria) %>% 
+      DT::datatable(
+        rownames = F,
+        escape = F,
+        selection = "none",
+        options = list(
+          dom="t",
+          pageLength = 9999)
+      )
+    
+  })
+  
+  
   
   # p3----
   output$p3 <- renderPlotly({
@@ -223,7 +321,7 @@ server <- function(input, output, session) {
         title = list(text = 'Età media alla diagnosi', x = 0.05),
         xaxis = list(title = "", tickangle= -45),
         yaxis = list(title = "% di casi", tickformat = ".0%",
-                     range = list(0, 0.51),
+                     range = list(0, 0.54),
                      tick0 = 0,
                      dtick = 0.05),
         showlegend = F) %>%
@@ -231,7 +329,7 @@ server <- function(input, output, session) {
       style(hoverinfo = 'none')
     
   })
-
+  
   # p4----
   output$p4 <- renderPlotly({
     dtBO %>%
@@ -246,7 +344,7 @@ server <- function(input, output, session) {
       plot_ly(x = ~data_mese, y = ~n, type = "scatter", mode="markers+lines+text", #source = "A",
               text = ~n, 
               marker = list(color = "#ABBDD7",
-              line = list(color = 'rgb(8,48,107)', width = 1)), 
+                            line = list(color = 'rgb(8,48,107)', width = 1)), 
               textfont = list(color = '#000'),
               textposition = 'top') %>%        
       layout(
@@ -260,7 +358,143 @@ server <- function(input, output, session) {
       config(displayModeBar = FALSE) %>% 
       style(hoverinfo = 'none')
     
-    })
+  })
+  
+  # sidebar right----
+  
+  # data1<-reactive({
+  #   if (input$muni!='Show all') {
+  #     data<-data[which(data$name==input$muni),]
+  #   }
+  #   if (input$area!='Show all') {
+  #     data<-data[data[input$area]!=0,]
+  #   }
+  #   return(data)
+  # })
+  
+  filtered_com <- reactive({
+    if (!is.null(clicked_shape())) {
+      
+      comuni %>%
+        filter(COMUNE == clicked_shape()$id)
+      
+    } else {
+      
+      casi %>% 
+        rename(casi_cane = casi_Cane,
+               comune_1 = comune) %>% 
+        bind_rows(summarise(.,
+                            across(where(is.numeric), sum),
+                            across(comune_1, ~"Provincia di Bologna"))) %>% 
+        filter(comune_1 == "Provincia di Bologna")
+      
+    }
+  })
+  
+  
+  output$ui_sidebar_right <- renderUI({
+    
+    if (!is.null(clicked_shape())) {
+      
+      div(
+        HTML(
+          paste0(
+            "<b>",filtered_com()$comune_1,"</b>",
+            "<br>",
+            "CAP: ", filtered_com()$cap,
+            "<br>",
+            "casi segnalati: ",
+            filtered_com()$casi_cane
+            
+          )))
+      
+    } else { 
+      
+      div(
+        HTML(
+          paste0(
+            "<b>",
+            filtered_com()$comune_1,
+            "</b>",
+            "<br>",
+            "casi segnalati: ",
+            filtered_com()$casi_cane
+            
+          )))
+      
+      
+    }
+    
+  })
+  
+  
+  # vet datatable----
+  output$vet <- DT::renderDataTable({
+    
+    gt_diagnosi %>% 
+      select(-related) %>% 
+      arrange(classe, categoria, vet_icd_o) %>%  
+      relocate(vet_icd_o, .before = icd_o_code) %>% 
+      mutate(icd_o_code = ifelse(icd_o_code == "NONE", "-", icd_o_code)) %>% 
+      DT::datatable(
+        rownames = F,
+        escape = F,
+        style = "bootstrap4",
+        # class = 'cell-border compact',
+        # class = 'table-bordered table-condensed',
+        selection = "none",
+        callback = JS("$('tbody').css('cursor', 'default')"),
+        options = list(dom = "ft<'vetwrap'lip>",
+                       lengthMenu = list(c(5, 10, 25, 50, 100), c('5', '10','25','50','100')), #togli se non vuoi "tutti"
+                       pageLength = 5,
+                       searching = TRUE,
+                       language = list(search = "Cerca: ",
+                                       paginate = list(previous = "Precedente", `next` = "Successiva"),
+                                       info = "_START_ - _END_ di _TOTAL_ voci",
+                                       infoFiltered = NULL,
+                                       infoEmpty = "-",
+                                       zeroRecords = "- - -",
+                                       lengthMenu = "Mostra _MENU_ righe"),
+                       columnDefs = list(
+                         # list(visible = FALSE, targets = c(3, 4, 5, 6, 7, 8)),
+                         # list(width = '40px', targets =c(0)),
+                         # list(width = '50px', targets =c(1)),
+                         # list(width = '40px', targets =c(9)),
+                         # list(className = 'dt-center', targets = c(0))
+                       )
+        )
+      )
+  })
+  
+  DTproxy_vet <- dataTableProxy("vet") 
+  observeEvent(input$inputClasse, {
+    updateSearch(DTproxy_vet,
+                 keywords = list(global = input$inputClasse, columns = "classe"))
+  })     
+  
+  observeEvent(input$inputCategoria, {
+    updateSearch(DTproxy_vet,
+                 keywords = list(global = input$inputCategoria, columns = "categoria"))
+  })   
+  
+  observeEvent(input$inputCode, {
+    updateSearch(DTproxy_vet,
+                 keywords = list(global = input$inputCode, columns = c("vet_icd_o","icd_o_code")))
+  })   
+  
+  
+  observe({
+    x <- input$inputClasse
+    
+    choices_cat <- as.character(sort(unique(diagnosi$categoria[diagnosi$classe == x])))
+    
+    if (x == "") 
+      choices_cat <- c("", sort(unique(diagnosi$categoria)))
+    
+    updateSelectInput(session, "inputB",
+                      choices = choices_cat
+    )
+  })
   
   # output$modal <- renderUI({
   #   # click <- input$mymap_shape_click
@@ -283,8 +517,8 @@ server <- function(input, output, session) {
   #     full_screen = FALSE)
   #   }
   # })
-    
-    
+  
+  
   # NO
   # https://stackoverflow.com/questions/34985889/how-to-get-the-zoom-level-from-the-leaflet-map-in-r-shiny
   # observe({
@@ -299,10 +533,10 @@ server <- function(input, output, session) {
   #   # })
   # })
   # 
+  
+  
+  
+}
 
-  
-    
-   }
-  
-  
- 
+
+
