@@ -166,8 +166,14 @@ server <- function(input, output, session) {
   # data----
   cases <- reactive({
     cases <- dtBO %>% 
-      select(data, comune, codice_paziente, specie, razza, vet_icd_o_1_code) %>% 
-      arrange(desc(data))
+      arrange(desc(data)) %>%
+      mutate(child = "<i class=\"fas fa-circle-plus\" role=\"presentation\" style=\"color:currentcolor\" aria-label=\"circle-plus icon\"></i>") %>% 
+      select(child, data, comune, codice_paziente, specie, razza,
+             sesso, eta,
+             vet_icd_o_1_code, organi_fissati,
+             anamnesi_e_quesito_diagnostico, diagnosi_istologica,
+             comorbilita, collisione, metastasi)
+    
     cases
     
   })
@@ -176,10 +182,58 @@ server <- function(input, output, session) {
   output$tab_data <- DT::renderDataTable({
     DT::datatable(
       cases(),
-      rownames = FALSE,
-      # style = 'bootstrap',
-      class = "cell-border stripe compact",
+      # fillContainer = TRUE,
+      rownames = F,
+      escape = F,
+      style = 'bootstrap4',
+      selection = "none",
+      # class = "cell-border stripe compact",
+      colnames = c(" ", "data", "comune", "codice_paziente", "specie",
+                   "razza", "sesso", "età", "vet_icd_o_1", "organi_fissati",
+                   "anamnesi", "diagnosi", "comorbilità", "collisione", "metastasi"),
+      callback = JS(
+        "$('tbody').css('cursor', 'default')",
+        # "$('div.dwnld').append($('#download_pubbl'));", # assegnare id
+        "table.column(1).nodes().to$().css({cursor: 'pointer'});
+         var format = function(d) {
+         return '<div style=\"background-color:#eee; padding: .5em;\"> <strong>ANAMNESI:</strong> ' +
+         d[10] + '<br><strong>DIAGNOSI:</strong> ' + d[11] +
+         '<br><strong>COMORBILITÀ:</strong> ' + d[12] +
+         '<br><strong>COLLISIONE:</strong> ' + d[13] +
+         '<br><strong>METASTASI:</strong> ' + d[14] +'</div>';
+         };
+         table.on('click', 'td.details-control', function() {
+         var td = $(this), row = table.row(td.closest('tr'));
+         if (row.child.isShown()) {
+         row.child.hide();
+         td.html('<i class=\"fas fa-circle-plus\" role=\"presentation\" style=\"color:currentcolor\" aria-label=\"circle-plus icon\"></i>');
+         } else {
+         row.child(format(row.data())).show();
+         td.html('<i class=\"fas fa-circle-minus\" role=\"presentation\" style=\"color:currentcolor\" aria-label=\"circle-plus icon\"></i>');
+         }
+         });"
+      ),
       options = list(
+        lengthMenu = list(c(5, 10, 25, 50), c('5', '10','25','50')), #togli se non vuoi "tutti"
+        pageLength = 10,
+        language = list(search = "Cerca: ",
+                        paginate = list(previous = "Precedente", `next` = "Successiva"),
+                        info = "_START_ - _END_ di _TOTAL_ voci",
+                        infoFiltered = "",
+                        infoEmpty = "-",
+                        zeroRecords = "- - -",
+                        lengthMenu = "Mostra _MENU_ righe"),
+        columnDefs = list(
+          list(visible = FALSE, targets = c(10,11,12,13,14)),
+          # list(width = '40px', targets =c(0)),
+          # list(width = '50px', targets =c(1)),
+          # list(width = '40px', targets =c(9)),
+          # list(className = 'dt-center', targets = c(0)),
+          # list(className = 'dt-body-right', targets = c(1, 9)),
+          # list(className = 'dt-head-right', targets = c(1, 9)),
+          # list(className = 'dt-head-center', targets = "_all"),
+          list(orderable = FALSE, className = 'details-control', targets = 0)
+        ),
         scrollX = TRUE)
     ) %>% 
       formatDate(c("data"), 'toLocaleDateString')
@@ -221,14 +275,15 @@ server <- function(input, output, session) {
       arrange(desc(perc)) %>% 
       head(5)
     
-    max_range <- max(dt$perc)+0.05-max(dt$perc)%%0.05
+    max_range <- max(dt$perc)+0.06-max(dt$perc)%%0.05
     
     dt %>% 
       plot_ly(x = ~perc, y = ~vet_icd_o_1_code, type = "bar", #color = ~vet_icd_o_1_code,
               source = "p2",
               marker = list(color = "#ABBDD7",
                             line = list(color = 'rgb(8,48,107)', width = 1)),
-              text = ~perc,
+              text = "clicca qui per ulteriori dettagli",
+              hoverinfo = "text",
               texttemplate = '%{x:.0%}',
               textfont = list(color = '#000'),
               textposition = 'outside') %>% 
@@ -236,11 +291,13 @@ server <- function(input, output, session) {
         margin = list(b = 50, t = 50),
         title = list(text = 'Top 5 tipi di tumore canino', x = 0.05),
         xaxis = list(title = "% di casi", tickformat = ".0%",
-                     range = list(0, max_range)),
+                     range = list(0, max_range),
+                     tick0 = 0,
+                     dtick = 0.05),
         yaxis = list(title = "", categoryorder = "total ascending"),
         showlegend = F) %>%
-      config(displayModeBar = FALSE) %>% 
-      style(hoverinfo = 'none')
+      config(displayModeBar = FALSE) 
+      # style(hoverinfo = 'none')
     
   })
   
@@ -321,7 +378,7 @@ server <- function(input, output, session) {
       filter(specie == "Cane") %>% 
       mutate(perc = n/sum(n))
     
-    max_range <- max(dt$perc)+0.05-max(dt$perc)%%0.05
+    max_range <- max(dt$perc)+0.11-max(dt$perc)%%0.05
     
     dt %>% 
       plot_ly(x = ~eta_classe, y = ~perc, type = "bar", #color = ~eta_classe,
@@ -417,7 +474,7 @@ server <- function(input, output, session) {
             "<br>",
             "CAP: ", filtered_com()$cap,
             "<br>",
-            "casi segnalati: ",
+            "casi registrati: ",
             filtered_com()$casi_cane
             
           )))
@@ -431,7 +488,7 @@ server <- function(input, output, session) {
             filtered_com()$comune_1,
             "</b>",
             "<br>",
-            "casi segnalati: ",
+            "casi registrati: ",
             filtered_com()$casi_cane
             
           )))
@@ -443,6 +500,29 @@ server <- function(input, output, session) {
   
   
   # vet datatable----
+  
+  
+  # gt_diagnosi <- reactive({
+  #   gt_diagnosi %>% 
+  #     select(-related) %>% 
+  #     arrange(classe, categoria, vet_icd_o) %>%  
+  #     relocate(vet_icd_o, .before = icd_o_code) %>% 
+  #     mutate(icd_o_code = ifelse(icd_o_code == "NONE", "-", icd_o_code)) %>%
+  #     filter(
+  #       conditional(input$inputClasse != "", classe == input$inputClasse),
+  #       conditional(input$inputCategoria != "", categoria == input$inputCategoria),
+  #       
+  #       conditional(input$inputCode != "", str_detect(vet_icd_o, input$inputCode)))
+  # })
+  
+  
+  # output$ui_vet <- renderUI({
+  #   div(
+  #     as_fill_item(),
+  #     dataTableOutput("vet")
+  #   )
+  # })
+  
   output$vet <- DT::renderDataTable({
     
     gt_diagnosi %>% 
@@ -451,6 +531,7 @@ server <- function(input, output, session) {
       relocate(vet_icd_o, .before = icd_o_code) %>% 
       mutate(icd_o_code = ifelse(icd_o_code == "NONE", "-", icd_o_code)) %>% 
       DT::datatable(
+        fillContainer = TRUE,
         rownames = F,
         escape = F,
         style = "bootstrap4",
@@ -459,13 +540,14 @@ server <- function(input, output, session) {
         selection = "none",
         callback = JS("$('tbody').css('cursor', 'default')"),
         options = list(dom = "ft<'vetwrap'lip>",
-                       lengthMenu = list(c(5, 10, 25, 50, 100), c('5', '10','25','50','100')), #togli se non vuoi "tutti"
-                       pageLength = 5,
+                       lengthMenu = list(c(5, 10, 25, 50), c('5', '10','25','50')), #togli se non vuoi "tutti"
+                       # lengthChange = TRUE,
+                       # paging = TRUE,
                        searching = TRUE,
                        language = list(search = "Cerca: ",
                                        paginate = list(previous = "Precedente", `next` = "Successiva"),
                                        info = "_START_ - _END_ di _TOTAL_ voci",
-                                       infoFiltered = NULL,
+                                       infoFiltered = "",
                                        infoEmpty = "-",
                                        zeroRecords = "- - -",
                                        lengthMenu = "Mostra _MENU_ righe"),
@@ -481,6 +563,7 @@ server <- function(input, output, session) {
   })
   
   DTproxy_vet <- dataTableProxy("vet") 
+  
   observeEvent(input$inputClasse, {
     updateSearch(DTproxy_vet,
                  keywords = list(global = input$inputClasse, columns = "classe"))
@@ -491,9 +574,14 @@ server <- function(input, output, session) {
                  keywords = list(global = input$inputCategoria, columns = "categoria"))
   })   
   
-  observeEvent(input$inputCode, {
+  observeEvent(input$inputVETCode, {
     updateSearch(DTproxy_vet,
-                 keywords = list(global = input$inputCode, columns = c("vet_icd_o","icd_o_code")))
+                 keywords = list(global = input$inputVETCode, columns = c("vet_icd_o")))
+  })   
+  
+  observeEvent(input$inputICDCode, {
+    updateSearch(DTproxy_vet,
+                 keywords = list(global = input$inputICDCode, columns = c("icd_o_code")))
   })   
   
   
@@ -505,8 +593,9 @@ server <- function(input, output, session) {
     if (x == "") 
       choices_cat <- c("", sort(unique(diagnosi$categoria)))
     
-    updateSelectInput(session, "inputB",
-                      choices = choices_cat
+    updateSelectInput(session, "inputCategoria",
+                      choices = choices_cat,
+                      selected = c("")
     )
   })
   

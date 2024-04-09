@@ -29,7 +29,7 @@ ui <- tagList(
       /*.tab-content > .tab-pane[data-value = home]*/ 
         
       .tab-content > .tab-pane {
-      min-height: calc(100vh - 330px);
+      min-height: calc(100vh - 350px);
       }
       
       .bslib-page-navbar>.navbar+div {
@@ -201,9 +201,20 @@ ui <- tagList(
       
       #vet td {
       vertical-align: middle;
-      padding: 2px;
+      padding: 4px;
       border: 2px white solid;
       }
+      
+      #tab_data td {
+      vertical-align: middle;
+      padding: 4px;
+      border: 2px white solid;
+      }
+      
+      #tab_data table.dataTable {
+      font-size: 15px;
+      }
+     
       
       #vet table.dataTable {
       font-size: 15px;
@@ -279,8 +290,9 @@ ui <- tagList(
                                   width = 300,
                                   div(
                                     
-                                    circleButton(inputId = "btn1", icon = icon("dog")),
-                                    circleButton(inputId = "btn2", icon = icon("cat")),
+                                    circleButton(inputId = "btn1", icon = icon("dog"))
+                                    # circleButton(inputId = "btn2", icon = icon("cat")),
+                                    
                                     #   actionBttn(
                                     #     inputId = "Id103",
                                     #     label = NULL,
@@ -366,19 +378,14 @@ ui <- tagList(
                 # data----
                 nav_panel(HTML("<i class='fas fa-chart-pie fa-fw me-2'></i> data"),
                           value = "data",
-                          page_fluid(
-                            DT::dataTableOutput("tab_data")
-                          )
-                ),
-                # info----
-                nav_panel(HTML("<i class='fas fa-magnifying-glass fa-fw me-2'></i> info"),
                           page_fillable(
-                            p("Third page content."),
-                            card(
-                              plotOutput("my_plot")
-                            )
-                          )
+                            # card(full_screen = T,
+                            #   card_body(
+                            DT::dataTableOutput("tab_data")
+                          # ))
+                )
                 ),
+
                 # vet----
                 nav_panel(HTML("<i class='fas fa-shield-dog fa-fw me-2'></i> Vet-ICD-O"),
                           page_fillable(
@@ -415,24 +422,38 @@ et al.<br>Cancers
                               full_screen = TRUE,
                               card_header(
                                 layout_columns(
-                                  class = "mx-5",
-                                  gap = "100px",
+                                  class = "mx-3 mt-3",
+                                  gap = "40px",
                                   selectizeInput("inputClasse", "Filtra per classe", 
                                                  c("", sort(unique(diagnosi$classe))),
                                                  selected = c("")),
                                   selectizeInput("inputCategoria", "Filtra per categoria",
                                                  c("", sort(unique(diagnosi$categoria))),
                                                  selected = c("")),
-                                  textInput("inputCode", "Filtra per VET-ICD-O")
+                                  textInput("inputVETCode", "Filtra per VET-ICD-O"),
+                                  textInput("inputICDCode", "Filtra per ICD-O")
                                 )),
-                              card_body(fillable = FALSE,
+                              card_body(fillable = T,
+                                        # as_fill_carrier(uiOutput("ui_vet"))
                                         dataTableOutput("vet")
                               ))
+                          )
+                ),
+                # info----
+                nav_panel(HTML("<i class='fas fa-regular fa-circle-info fa-fw me-2'></i> info"),
+                          page_fillable(
+                            p("Info page content.")
+                            # card(
+                            #   plotOutput("my_plot")
+                            # )
                           )
                 ),
                 
                 # partners----
                 nav_panel(HTML("<i class='fas fa-handshake fa-fw me-2'></i> partners"),
+                          page_fillable(
+                            p("Partners page content.")
+                          )
                           # page_fluid(
                           #   layout_sidebar(
                           #     sidebar = sidebar("Provincia di Bologna",

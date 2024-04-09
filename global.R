@@ -26,7 +26,7 @@ library(plotly)
 
 library(leaflet)
 library(sf)
-# library(htmltools)
+library(htmltools)
 # library(htmlwidgets)
 
 link_shiny <- tags$a(
@@ -118,14 +118,14 @@ title <- tags$div(
 # # https://github.com/DataTables/Plugins/tree/master/features/pageResize
 # # https://github.com/DataTables/Plugins/blob/master/features/pageResize/dataTables.pageResize.js
 # # https://stackoverflow.com/questions/72169187/r-shiny-making-datatable-columns-manuallly-resizable
-# dep <- htmlDependency(
-#   name = "PageResize", 
-#   version = "1.1.0", 
-#   src = normalizePath("./www"),
-#   script = "dataTables.pageResize.js",
-#   # stylesheet = "jquery.dataTables.colResize.css",
-#   all_files = FALSE
-# )
+dep <- htmlDependency(
+  name = "PageResize",
+  version = "1.1.0",
+  src = normalizePath("./www"),
+  script = "dataTables.pageResize.js",
+  # stylesheet = "jquery.dataTables.colResize.css",
+  all_files = FALSE
+)
 
 
 # jscode.autoHeightDT <- '
@@ -148,3 +148,11 @@ title <- tags$div(
 #   });
 # 
 # '
+
+conditional <- function(condition, success) {
+  if (condition) {
+    success
+  } else {
+    TRUE
+  }
+}
