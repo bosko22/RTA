@@ -82,7 +82,7 @@ casi <- dtBO %>%
 #   summarise(casi = n()) %>% 
 #   slice_max(order_by = casi, n = 3)
 
-
+fst::write_fst(casi, here("data", "tidy", "casi.fst"))
 fst::write_fst(dtBO, here("data", "tidy", "dtBO.fst"))
 
 # # CODICE COMMENTATO MA DA LANCIARE:
