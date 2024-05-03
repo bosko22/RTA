@@ -28,6 +28,13 @@ library(leaflet)
 library(sf)
 # library(htmltools)
 # library(htmlwidgets)
+library(shinymanager)
+
+credentials <- data.frame(
+  user = c("admin", "quest"),
+  password = c("admin", "quest"),
+  stringsAsFactors = FALSE
+)
 
 link_shiny <- tags$a(
   shiny::icon("github"), "Shiny",

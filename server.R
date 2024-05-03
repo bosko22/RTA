@@ -1,5 +1,25 @@
 server <- function(input, output, session) {
   
+  # authentication module
+  auth <- callModule(
+    module = auth_server,
+    id = "auth",
+    check_credentials = check_credentials(credentials)
+  )
+  
+  observe({
+    req(auth$user=="admin")
+    shinyjs::show("fab_btn_div")
+  })
+  
+  output$res_auth <- renderPrint({
+    reactiveValuesToList(auth)
+  })
+  
+  observeEvent(session$input$logout,{
+    session$reload()
+  })
+  
   shinyjs::addClass(class = "nav-justified", selector = ".nav-pills") #nav-fill
   
   # observe(session$setCurrentTheme(

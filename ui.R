@@ -1,5 +1,13 @@
 ui <- tagList(
-  
+  auth_ui(id = "auth"),
+  shinyjs::hidden(tags$div(id = "fab_btn_div",fab_button(
+    actionButton(
+      inputId = "logout",
+      label = NULL,
+      tooltip = "Logout",
+      icon = icon("sign-out")
+    ))
+  )),
   tags$head(
     tags$title(
       "Registro tumori animali"
@@ -240,6 +248,12 @@ ui <- tagList(
       #vet .dataTables_paginate {
       padding-top: 20px;
       padding-bottom: 0px;
+      }
+      
+      
+      .mfb-component__wrap > a > i,
+      .mfb-component__child-icon {
+      bottom: 15px;
       }
 
       "))),
