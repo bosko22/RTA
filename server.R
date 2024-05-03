@@ -7,6 +7,7 @@ server <- function(input, output, session) {
     check_credentials = check_credentials(credentials)
   )
   
+  
   observe({
     req(auth$user=="admin")
     shinyjs::show("fab_btn_div")

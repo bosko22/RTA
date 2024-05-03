@@ -255,6 +255,7 @@ ui <- tagList(
       .mfb-component__child-icon {
       bottom: 15px;
       }
+      
 
       "))),
   
