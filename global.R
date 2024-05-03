@@ -32,8 +32,8 @@ library(sf)
 library(shinymanager)
 
 credentials <- data.frame(
-  user = c("admin", "quest"),
-  password = c("admin", "quest"),
+  user = c("admin"), #, "quest"),
+  password = c("Rta2024!"), #, "quest"),
   stringsAsFactors = FALSE
 )
 
