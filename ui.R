@@ -1,4 +1,5 @@
 ui <- tagList(
+  # shinymanager
   auth_ui(id = "auth"),
   shinyjs::hidden(tags$div(id = "fab_btn_div",fab_button(
     actionButton(
@@ -8,6 +9,8 @@ ui <- tagList(
       icon = icon("sign-out")
     ))
   )),
+  
+  
   tags$head(
     tags$title(
       "Registro tumori animali"

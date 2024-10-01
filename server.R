@@ -1,5 +1,6 @@
 server <- function(input, output, session) {
   
+  # shinymanager
   # authentication module
   auth <- callModule(
     module = auth_server,
@@ -21,16 +22,18 @@ server <- function(input, output, session) {
     session$reload()
   })
   
+  
+  
+  
+  
+  
   shinyjs::addClass(class = "nav-justified", selector = ".nav-pills") #nav-fill
   
   # observe(session$setCurrentTheme(
   #   if (isTRUE(input$dark_mode)) dark else light
   # ))
   
-  output$my_plot <- renderPlot({
-    plot(cars)
-  })
-  
+
   # zoom <- reactive({
   #   if(is.null(input$map01_zoom)){
   #     return(9)

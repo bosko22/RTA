@@ -22,6 +22,7 @@ library(htmltools)
 library(DT)
 library(gt)
 library(plotly)
+library(janitor)
 
 
 
@@ -31,11 +32,16 @@ library(sf)
 # library(htmlwidgets)
 library(shinymanager)
 
+
+# shinymanager
 credentials <- data.frame(
   user = c("admin"), #, "quest"),
   password = c("Rta2024!"), #, "quest"),
   stringsAsFactors = FALSE
 )
+
+
+
 
 link_shiny <- tags$a(
   shiny::icon("github"), "Shiny",
