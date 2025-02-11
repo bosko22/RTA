@@ -9,19 +9,19 @@ library(sf)
 cod_diagnosi <- read_excel(here("data", "raw", "codici_diagnosi.xlsx")) %>% 
   janitor::clean_names()
 
-syn <- diagnosi %>% 
+syn <- cod_diagnosi %>% 
   mutate(categoria = str_to_sentence(categoria)) %>% 
   filter(level == "Synonym") %>% 
   group_by(vet_icd_o, classe, categoria) %>% 
-  summarise(synonym = paste(term,collapse = "<br>"))
+  summarise(synonym = paste(term,collapse = "<br>"), .groups = "drop")
 
-rel <- diagnosi %>% 
+rel <- cod_diagnosi %>% 
   mutate(categoria = str_to_sentence(categoria)) %>% 
   filter(level == "Related") %>% 
   group_by(vet_icd_o, classe, categoria) %>% 
-  summarise(related = paste(term,collapse = "<br>"))
+  summarise(related = paste(term,collapse = "<br>"), .groups = "drop")
 
-gt_diagnosi <- diagnosi %>% 
+gt_diagnosi <- cod_diagnosi %>% 
   mutate(categoria = str_to_sentence(categoria)) %>% 
   filter(level == "Preferred") %>% 
   left_join(syn,
@@ -48,42 +48,67 @@ capBO <- capBO %>%
   relocate(comune) %>% 
   add_row(comune = "Bologna", cap1 = 40100, cap2 = 40100)
 
-dtBO <- read_excel(here("data", "raw", "dtBO_mod.xlsx"))
-dtBO <- dtBO %>% 
-  janitor::clean_names() %>% 
-  mutate(cap = as.numeric(cap)) %>% 
-  mutate(data = dmy(data)) %>% 
-  left_join(capBO,
-            join_by(between(cap, cap1, cap2))) %>% 
-  filter(!is.na(specie)) %>%
-  filter(!is.na(vet_icd_o_1_code)) %>%
-  select(-c(cap1,cap2))
+dati <- read_excel(here("data", "raw", "RTA con dimevet+izs+anicura.xlsx")) %>% 
+  janitor::clean_names()
 
-casi <- dtBO %>%
+dati <- dati %>% 
+  filter(!str_detect(data_compilazione, "/")) %>% 
+  mutate(data = janitor::convert_to_date(data_compilazione), .after = data_compilazione) %>% 
+  bind_rows(dati %>% 
+              filter(str_detect(data_compilazione, "/")) %>% 
+              mutate(data = lubridate::dmy(data_compilazione), .after = data_compilazione)) %>% 
+  mutate(cap = as.numeric(cap),
+         specie = str_to_lower(specie),
+         razza = str_to_title(razza)
+  ) %>% 
+  left_join(capBO,
+            join_by(between(cap, cap1, cap2))) %>%
+  select(-c(cap1,cap2)) %>% 
+  relocate(comune, .after = cap) %>% 
+  mutate(vet_icd_o_1_code = ifelse(vet_icd_o_1_code == ".", NA, vet_icd_o_1_code)) %>%
+  
+  filter(!is.na(vet_icd_o_1_code))
+
+ncasi <- dati %>%
   group_by(comune, specie) %>%
   summarise(casi = n(), .groups = "drop") %>% 
-  # ungroup() %>% 
   pivot_wider(names_from = specie, values_from = casi, names_prefix = "casi_") 
-  # mutate(casi_Totali = sum(across(starts_with("casi")), na.rm = T))
-  # bind_rows(summarise(.,
-  #                     across(where(is.numeric), sum),
-  #                     # across(where(is.character), ~"Total"),
-  #                     across(comune, ~"Provincia di Bologna")))
 
-# dtBO %>% 
-#   mutate(
-#     eta_anno = as.integer(str_extract(eta, "\\d+(?=a)")),
-#     eta_mese = as.integer(str_extract(eta, "\\d+(?=m)"))
-#   ) %>% View()
+fst::write_fst(ncasi, here("data", "tidy", "ncasi.fst"))
+fst::write_fst(dati, here("data", "tidy", "dati.fst"))
 
-# # top 3
-# dtBO %>%
-#   group_by(comune, specie, vet_icd_o_1_code) %>%
-#   summarise(casi = n()) %>% 
-#   slice_max(order_by = casi, n = 3)
+# dtBO <- read_excel(here("data", "raw", "dtBO_mod.xlsx"))
+# dtBO <- dtBO %>% 
+#   janitor::clean_names() %>% 
+#   mutate(cap = as.numeric(cap)) %>% 
+#   mutate(data = dmy(data)) %>% 
+#   left_join(capBO,
+#             join_by(between(cap, cap1, cap2))) %>% 
+#   filter(!is.na(specie)) %>%
+#   filter(!is.na(vet_icd_o_1_code)) %>%
+#   select(-c(cap1,cap2))
+# 
+# casi <- dtBO %>%
+#   group_by(comune, specie) %>%
+#   summarise(casi = n(), .groups = "drop") %>% 
+#   # ungroup() %>% 
+#   pivot_wider(names_from = specie, values_from = casi, names_prefix = "casi_") 
+# 
+# fst::write_fst(casi, here("data", "tidy", "casi.fst"))
+# fst::write_fst(dtBO, here("data", "tidy", "dtBO.fst"))
 
-fst::write_fst(casi, here("data", "tidy", "casi.fst"))
-fst::write_fst(dtBO, here("data", "tidy", "dtBO.fst"))
+
+
+
+
+
+
+
+
+
+
+
+
 
 # # CODICE COMMENTATO MA DA LANCIARE:
 # # CODICE PER MAPPA COMUNI
