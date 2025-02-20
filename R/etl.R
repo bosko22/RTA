@@ -67,7 +67,36 @@ dati <- dati %>%
   relocate(comune, .after = cap) %>% 
   mutate(vet_icd_o_1_code = ifelse(vet_icd_o_1_code == ".", NA, vet_icd_o_1_code)) %>%
   
-  filter(!is.na(vet_icd_o_1_code))
+  filter(!is.na(vet_icd_o_1_code)) %>%
+  mutate(eta = ifelse(eta == "5 aa", "5a", eta)) %>% 
+  filter(str_detect(eta, "[0-9]"))
+
+dati <- dati %>%
+  filter(str_detect(eta, "[am]")) %>%
+  mutate(eta_anno = case_when(
+    str_detect(eta, "m") & !str_detect(eta, "a") ~ 0,
+    .default = as.integer(str_extract(eta, "\\d+(?=a)"))), .after = eta) %>%
+  bind_rows(
+    dati %>%
+      filter(!str_detect(eta, "[am]")) %>% 
+      mutate(eta_anno = floor(as.numeric(eta)), .after = eta)) %>% 
+  mutate(
+    eta_classe = cut(eta_anno, 
+                     breaks = seq(0, 20, by = 2), 
+                     labels = paste0(seq(0, 18, by = 2), "-", seq(2, 20, by = 2), " yrs"),
+                     include.lowest = T,
+                     right = F)) %>%
+  mutate(eta_classe = case_when(
+    eta_anno > 20 ~ ">20 yrs",
+    is.na(eta_classe) ~ "Unknown",
+    TRUE ~ eta_classe)) %>% 
+  mutate(eta_classe = ordered(eta_classe, levels = c("Unknown", "0-2 yrs", "2-4 yrs",
+                                                     "4-6 yrs", "6-8 yrs", "8-10 yrs", "10-12 yrs",
+                                                     "12-14 yrs", "14-16 yrs", "16-18 yrs", "18-20 yrs", ">20 yrs"))) %>%
+  relocate(matches("eta_", ignore.case = TRUE), .after = eta)
+
+
+
 
 ncasi <- dati %>%
   group_by(comune, specie) %>%

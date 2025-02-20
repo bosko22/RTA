@@ -60,7 +60,7 @@ diagnosi <- read_excel(here("data", "raw", "codici_diagnosi.xlsx")) %>%
 
 gt_diagnosi <- fst::read_fst(here("data", "tidy", "gt_diagnosi.fst"))
 
-casi <- fst::read_fst(here("data", "tidy", "casi.fst"))
+casi <- fst::read_fst(here("data", "tidy", "ncasi.fst"))
 
 # comuni <- sf::st_read("https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_municipalities.geojson")
 # comuniBO <- subset(comuni, comuni$prov_name == "Bologna")
@@ -91,7 +91,11 @@ comuni <- comuni %>%
 #               select(comune_1, casi_cane),
 #             join_by(comune_1))
 
-dtBO <- fst::read_fst(here("data", "tidy", "dtBO.fst"))
+# dtBO <- fst::read_fst(here("data", "tidy", "dtBO.fst"))
+
+dati <- fst::read_fst(here("data", "tidy", "dati.fst")) %>% as_tibble()
+
+
 
 # assignInNamespace(
 #   "collapse_icon", 

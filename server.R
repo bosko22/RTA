@@ -189,14 +189,15 @@ server <- function(input, output, session) {
   
   # data----
   cases <- reactive({
-    cases <- dtBO %>% 
+    cases <- dati %>% 
       arrange(desc(data)) %>%
       mutate(child = "<i class=\"fas fa-circle-plus\" role=\"presentation\" style=\"color:currentcolor\" aria-label=\"circle-plus icon\"></i>") %>% 
-      select(child, data, comune, codice_paziente, specie, razza,
+      select(child, data, comune, codice_soggetto, specie, razza,
              sesso, eta,
              vet_icd_o_1_code, organi_fissati,
-             anamnesi_e_quesito_diagnostico, diagnosi_istologica,
-             comorbilita, collisione, metastasi)
+             anamnesi_e_quesito_diagnostico, diagnosi_istologica, sede_prelievo_istologica,
+             diagnosi_citologica, sede_prelievo_citologica,
+             comorbilita, metastasi)
     
     cases
     
@@ -268,7 +269,7 @@ server <- function(input, output, session) {
   
   # p1----
   output$p1 <- renderPlotly({
-    dtBO %>% 
+    dati %>% 
       group_by(specie, razza) %>% 
       summarise(casi = n(), .groups = "drop") %>% 
       arrange(desc(casi)) %>% 
@@ -292,7 +293,7 @@ server <- function(input, output, session) {
   
   # p2----
   output$p2 <- renderPlotly({
-    dt <- dtBO %>% 
+    dt <- dati %>% 
       group_by(vet_icd_o_1_code) %>% 
       summarise(casi = n(), .groups = "drop") %>% 
       mutate(perc = casi/(sum(casi))) %>% 
@@ -382,24 +383,9 @@ server <- function(input, output, session) {
   
   # p3----
   output$p3 <- renderPlotly({
-    dt <- dtBO %>%
-      mutate(
-        eta_anno = as.integer(str_extract(eta, "\\d+(?=a)")),
-        eta_mese = as.integer(str_extract(eta, "\\d+(?=m)")),
-        eta_classe = cut(eta_anno, 
-                         breaks = seq(0, 20, by = 2), 
-                         labels = paste0(seq(0, 18, by = 2), "-", seq(2, 20, by = 2), " yrs"),
-                         include.lowest = T,
-                         right = F)) %>%
-      mutate(eta_classe = case_when(
-        is.na(eta_classe) ~ "Unknown",
-        TRUE ~ eta_classe)) %>% 
-      mutate(eta_classe = ordered(eta_classe, levels = c("Unknown", "0-2 yrs", "2-4 yrs",
-                                                         "4-6 yrs", "6-8 yrs", "8-10 yrs", "10-12 yrs",
-                                                         "12-14 yrs", "14-16 yrs", "16-18 yrs", "18-20 yrs"))) %>%
+    dt <- dati %>%
       group_by(specie, eta_classe) %>% 
-      summarise(n = n(), .groups = "drop") %>%
-      filter(specie == "Cane") %>% 
+      summarise(n = n(), .groups = "drop") %>%  
       mutate(perc = n/sum(n))
     
     max_range <- max(dt$perc)+0.11-max(dt$perc)%%0.05
@@ -409,7 +395,7 @@ server <- function(input, output, session) {
               marker = list(color = "#ABBDD7",
                             line = list(color = 'rgb(8,48,107)', width = 1)),
               text = ~perc, textfont = list(color = '#000'),
-              texttemplate = '%{y:.0%}', 
+              texttemplate = '%{y:.1%}', 
               textposition = 'outside') %>% 
       layout(
         margin = list(b = 50, t = 50),
@@ -427,7 +413,7 @@ server <- function(input, output, session) {
   
   # p4----
   output$p4 <- renderPlotly({
-    dtBO %>%
+    dati %>%
       mutate(
         data_anno = year(data),
         data_mese = month(data), .after = data) %>% 
@@ -476,7 +462,7 @@ server <- function(input, output, session) {
     } else {
       
       casi %>% 
-        rename(casi_cane = casi_Cane,
+        rename(#casi_cane = casi_Cane,
                comune_1 = comune) %>% 
         bind_rows(summarise(.,
                             across(where(is.numeric), sum),
@@ -634,7 +620,7 @@ server <- function(input, output, session) {
   #                            comuni$COMUNE[comuni$COMUNE == clicked()$id],
   #                            "</strong><br>"))),
   #     card_body(
-  #                  datatable(dtBO %>%
+  #                  datatable(dati %>%
   #                    filter(comune == clicked()$id) %>% 
   #                    group_by(specie, vet_icd_o_1_code) %>%
   #                    summarise(casi = n()) %>%
