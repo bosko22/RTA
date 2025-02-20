@@ -195,7 +195,8 @@ server <- function(input, output, session) {
       select(child, data, comune, codice_soggetto, specie, razza,
              sesso, eta,
              vet_icd_o_1_code, organi_fissati,
-             anamnesi_e_quesito_diagnostico, diagnosi_istologica, sede_prelievo_istologica,
+             anamnesi_e_quesito_diagnostico, 
+             diagnosi_istologica, sede_prelievo_istologica,
              diagnosi_citologica, sede_prelievo_citologica,
              comorbilita, metastasi)
     
@@ -215,17 +216,19 @@ server <- function(input, output, session) {
       # class = "cell-border stripe compact",
       colnames = c(" ", "data", "comune", "codice_paziente", "specie",
                    "razza", "sesso", "età", "vet_icd_o_1", "organi_fissati",
-                   "anamnesi", "diagnosi", "comorbilità", "collisione", "metastasi"),
+                   "anamnesi", 
+                   "diagnosi istologica", "sede prelievo istologica",
+                   "diagnosi citologica", "sede prelievo citologica",
+                   "comorbilità", "metastasi"),
       callback = JS(
         "$('tbody').css('cursor', 'default')",
         # "$('div.dwnld').append($('#download_pubbl'));", # assegnare id
         "table.column(1).nodes().to$().css({cursor: 'pointer'});
          var format = function(d) {
-         return '<div style=\"background-color:#eee; padding: .5em;\"> <strong>ANAMNESI:</strong> ' +
-         d[10] + '<br><strong>DIAGNOSI:</strong> ' + d[11] +
-         '<br><strong>COMORBILITÀ:</strong> ' + d[12] +
-         '<br><strong>COLLISIONE:</strong> ' + d[13] +
-         '<br><strong>METASTASI:</strong> ' + d[14] +'</div>';
+         return '<div style=\"background-color:#eee; padding: .5em;\"> <strong>ANAMNESI:</strong> ' + d[10] +
+         '<br><strong>DIAGNOSI:</strong> ' + d[11] +
+         '<br><strong>COMORBILITÀ:</strong> ' + d[15] +
+         '<br><strong>METASTASI:</strong> ' + d[16] +'</div>';
          };
          table.on('click', 'td.details-control', function() {
          var td = $(this), row = table.row(td.closest('tr'));

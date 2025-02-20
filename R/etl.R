@@ -51,7 +51,25 @@ capBO <- capBO %>%
 dati <- read_excel(here("data", "raw", "RTA con dimevet+izs+anicura.xlsx")) %>% 
   janitor::clean_names()
 
+converti_anni_mesi <- function(anni_decimali) {
+  if (is.na(anni_decimali)) return(NA) 
+  
+  anni <- floor(anni_decimali)  # Parte intera (anni)
+  mesi <- round((anni_decimali - anni) * 12)  # Parte decimale convertita in mesi
+  
+  # Costruzione della stringa risultato senza "0a" o "0m"
+  risultato <- c()
+  if (anni > 0) risultato <- c(risultato, paste0(anni, "a"))
+  if (mesi > 0) risultato <- c(risultato, paste0(mesi, "m"))
+  
+  return(paste(risultato, collapse = " "))
+}
+
 dati <- dati %>% 
+  filter(str_detect(laboratorio_di_diagnostica, "Portoni Rossi")) %>% 
+  mutate(eta = sapply(as.numeric(eta), converti_anni_mesi)) %>% 
+  bind_rows(dati %>% 
+              filter(!str_detect(laboratorio_di_diagnostica, "Portoni Rossi"))) %>% 
   filter(!str_detect(data_compilazione, "/")) %>% 
   mutate(data = janitor::convert_to_date(data_compilazione), .after = data_compilazione) %>% 
   bind_rows(dati %>% 
