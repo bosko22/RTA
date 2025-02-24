@@ -1,6 +1,6 @@
 # app.R
 library(shiny)
-library(shinymanager)
+# library(shinymanager)
 library(shinyjs)
 
 # Credenziali di esempio
